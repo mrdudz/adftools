@@ -6,8 +6,10 @@ ADF-files, which is a raw dump of an Amiga disk.
 This source is based on the decades old repository posted at
 https://github.com/bos4711/adftools
 
-It was updated to compile with the latest version of the adflib, which is
+- It was updated to compile with the latest version of the adflib, which is
 available at https://github.com/adflib/ADFlib
+- all tools return "standard" values on success/error, so they work eg in
+  Makefiles
 
 goals:
 - add the missing adfrelabel and adfrename programs
@@ -16,15 +18,15 @@ goals:
 
 The current version is v0.4wip and contains the following tools:
 
-adfcopy    - copy files from host to the ADF
-adfcreate  - create an ADF
-adfdelete  - delete files / dirs within an ADF
-adfdump    - dump the bootblock from an ADF
-adfextract - extract complete file structure from an ADF
-adfinfo    - show info about an ADF
-adfinstall - install a bootblock to an ADF
-adflist    - list all contents of an ADF
-adfmakedir - create a directory within an ADF
+    adfcopy    - copy files from host to the ADF
+    adfcreate  - create an ADF
+    adfdelete  - delete files / dirs within an ADF
+    adfdump    - dump the bootblock from an ADF
+    adfextract - extract complete file structure from an ADF
+    adfinfo    - show info about an ADF
+    adfinstall - install a bootblock to an ADF
+    adflist    - list all contents of an ADF
+    adfmakedir - create a directory within an ADF
 
 Some of the tools utilizes zlib and will therefore work with
 compressed ADF-files (.adf.gz, .adz, ...). The tools that does not

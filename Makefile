@@ -1,19 +1,27 @@
 
 .SILENT:
 
-ADFLIB=../ADFlib-0.10.7
-#ADFLIB=../ADFlib-0.8.0
-#ADFLIB=../ADFlib-d4e2e82d6e11113b6919a6f4d727153d04e25152
+#### uncomment if compiling with local copy of the adflib
+#
+## directory contain the adflib.a file
+#ADFLIBOBJS=../ADFlib-0.10.7/src/.libs
+##directory containing the adflib.h file
+#ADFLIBINCS=../ADFlib-0.10.7/src/
+#
+#LIBOBJS=$(ADFLIBOBJS)/libadf.a
+#CFLAGS+=-I$(ADFLIBINCS)
+#
+####
 
 LIBS=-ladf
+
 SOURCES=error.c misc.c version.c zfile.c
-OBJS=	$(SOURCES:.c=.o)
-LIBOBJS=$(ADFLIB)/src/.libs/libadf.a
+OBJS=$(SOURCES:.c=.o)
 PROGS= adfcopy adfcreate adfdelete adfdump adfextract adfinfo adfinstall adflist adfmakedir
+
 CC= gcc
-#CFLAGS=-Wall -ggdb
-CFLAGS=-O2 -W -Wall -Wextra -g -ggdb
-CFLAGS+=-I$(ADFLIB)/src/
+CFLAGS+=-O2 -W -Wall -Wextra
+#CFLAGS+=-g -ggdb
 
 all: $(PROGS)
 
