@@ -16,14 +16,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/*  #include "adfextract.h" */
 #include "error.h"
 #include "misc.h"
 #include "version.h"
 #include "zfile.h"
 
 /* the name of this program */
-char *program_name = ADFINFO;
+const char *program_name = ADFINFO;
 
 /* options */
 static struct option long_options[] =
@@ -43,14 +42,17 @@ int
 print_image_info (char *filename)
 {
   int i;
-  struct Device *dev;
-  struct Volume *vol;
+  struct AdfDevice *dev;
+  struct AdfVolume *vol;
+  struct AdfDevGeometry *geometry;
+  size_t j;
 
   mount_adf(filename, &dev, &vol, READ_ONLY);
 
   /* dev = adfMountDev (n_zfile_open(filename, "r"), 1); */
-  if ( (!dev) || (!vol) )
-    return 0;
+  if ( (!dev) || (!vol) ) {
+      return 0;
+  }
   /* if (!dev) */
   /*   return 0; */
 
@@ -59,25 +61,25 @@ print_image_info (char *filename)
   /*   return 0; */
 
   for (i = 0; i < dev->nVol; i++) {
-    register long j;
     printf ("%s\n", filename);
-    for (j = 0; j < strlen (filename); j++)
+    for (j = 0; j < strlen (filename); j++) {
       putchar ('=');
+    }
     printf ("\nLabel       : %-30s\n", (dev->volList[i]->volName) ? dev->volList[i]->volName : "(Unknown)");
     printf ("Type        : ");
 
-    switch (vol->dev->devType) {
-      case DEVTYPE_FLOPDD:
+    switch (vol->dev->type) {
+      case ADF_DEVTYPE_FDD:
 	printf ("Floppy Double Density - 880Kb\n");
 	break;
-      case DEVTYPE_FLOPHD:
+      case ADF_DEVTYPE_FHD:
 	printf ("Floppy High Density - 1760Kb\n");
 	break;
-      case DEVTYPE_HARDDISK:
+      case ADF_DEVTYPE_HD:
 	printf ("Hard Disk partition - %3.1fKb\n",
 		((vol->lastBlock - vol->firstBlock + 1) * 512.0) / 1024.0);
 	break;
-      case DEVTYPE_HARDFILE:
+      case ADF_DEVTYPE_HDF:
 	printf ("Hardfile - %3.1fKb\n",
 		((vol->lastBlock - vol->firstBlock + 1) * 512.0) / 1024.0);
 	break;
@@ -85,18 +87,19 @@ print_image_info (char *filename)
 	printf ("Unknown device type.\n");
     }
 
-    printf ("Filesystem  : %s\n", get_adf_dostype (dev->volList[0]->dosType));
-    printf ("Cylinders   : %ld\n", (long int)dev->cylinders);
-    printf ("Heads       : %ld\n", (long int)dev->heads);
-    printf ("Sectors/Cyl : %ld\n", (long int)dev->sectors);
+    printf ("Filesystem  : %s\n", get_adf_dostype (dev->volList[0]->fs.type));
+    geometry = &dev->geometry;
+    printf ("Cylinders   : %ld\n", (long int)geometry->cylinders);
+    printf ("Heads       : %ld\n", (long int)geometry->heads);
+    printf ("Sectors/Cyl : %ld\n", (long int)geometry->sectors);
     printf ("Blocks      : %ld (%ld - %ld)\n", (long int)(vol->lastBlock + 1), (long int)vol->firstBlock, (long int)vol->lastBlock);
     j = adfCountFreeBlocks (vol);
     printf ("Blocks used : %ld\n", (vol->lastBlock - j) + 1);
     printf ("Blocks free : %ld\n\n", j);
   }
 
-  adfUnMount (vol);
-  adfUnMountDev (dev);
+  adfVolUnMount (vol);
+  adfDevUnMount (dev);
   return 1;
 }
 
@@ -169,5 +172,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

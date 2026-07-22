@@ -22,7 +22,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFINSTALL;
+const char *program_name = ADFINSTALL;
 
 /* install using a specified bootblock */
 static int opt_install;
@@ -242,5 +242,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

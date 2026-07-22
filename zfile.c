@@ -34,9 +34,10 @@ static struct zfile
 static int
 gunzip (const char *decompress, const char *src, const char *dst)
 {
-    char cmd[1024];
-    if (!dst)
-	return 1;
+    char cmd[1024 * 3];
+    if (!dst) {
+      return 1;
+    }
     sprintf (cmd, "%s -c -d \"%s\" > \"%s\"", decompress, src, dst);
 
     return !system (cmd);
@@ -48,8 +49,8 @@ gunzip (const char *decompress, const char *src, const char *dst)
 static int
 uncompress (const char *name, char *dest)
 {
-    char *ext = strrchr (name, '.');
-    char nam[1024];
+    const char *ext = strrchr (name, '.');
+    char nam[1024 * 2];
 
     if (ext != NULL && access (name, 0) >= 0) {
 	ext++;
@@ -86,9 +87,10 @@ uncompress (const char *name, char *dest)
 static int
 compress (const char *src, const char *dst)
 {
-  char cmd[1024];
-  if (!dst)
+  char cmd[1024 * 2];
+  if (!dst) {
     return 1;
+  }
 
   if (access (dst, W_OK) == 0) {
     sprintf (cmd, "gzip -9nc \"%s\" > \"%s\"", src, dst);
@@ -108,8 +110,9 @@ zfile_open (const char *name, const char *mode, unsigned short re_compress)
     int fd = 0;
 
     l = malloc (sizeof *l);
-    if (!l)
-	return NULL;
+    if (!l) {
+      return NULL;
+    }
 
     strcpy (l->orgname, name);
     if (!uncompress (name, NULL)) {
@@ -119,20 +122,38 @@ zfile_open (const char *name, const char *mode, unsigned short re_compress)
 
       return l;
     }
-
-    tmpnam (l->name);
-
+#if 0
+    if (tmpnam (l->name) == NULL) {
+      return NULL;
+    }
+#else
+    {
+      size_t nlen = strlen(l->name);
+      if (nlen > 0) {
+        int res;
+        char *nam = malloc(nlen + 0x10);
+        strcpy(nam, l->name);
+        strcat(nam, "XXXXXX");
+        res = mkstemp(nam);
+        if (res >= 0) {
+          strcpy (l->name, nam);
+        }
+        free(nam);
+      }
+    }
+#endif
     /* On the amiga this would make ixemul loose the break handler */
     /* ==> fixed in exmul v4.6 */
     fd = creat (l->name, 0666);
-    if (fd < 0)
-	return NULL;
+    if (fd < 0) {
+      return NULL;
+    }
 
     if (!uncompress (name, l->name)) {
-	free (l);
-	close (fd);
-	unlink (l->name);
-	return NULL;
+      unlink (l->name);
+      free (l);
+      close (fd);
+      return NULL;
     } else {
       l->compressed = 1;
       l->re_compress = re_compress;
@@ -141,8 +162,8 @@ zfile_open (const char *name, const char *mode, unsigned short re_compress)
     l->f = fopen (l->name, mode);
 
     if (l->f == NULL) {
-	free (l);
-	return NULL;
+      free (l);
+      return NULL;
     }
 
     l->next = zlist;

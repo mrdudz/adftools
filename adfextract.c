@@ -23,7 +23,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFEXTRACT;
+const char *program_name = ADFEXTRACT;
 
 /* long options that have no short eqvivalent short option */
 enum {
@@ -60,7 +60,7 @@ static int max_fts = MAX_FTS;
 /********************************************************************/
 /* save the timestamp from the adf-file for later update */
 void
-update_timestamp(char *filename, struct Entry *entry)
+update_timestamp(char *filename, struct AdfEntry *entry)
 {
   struct tm time_str;
   struct utimbuf *utime_buf;
@@ -94,13 +94,13 @@ update_timestamp(char *filename, struct Entry *entry)
   }
 }
 void
-do_extract_file(struct Volume *vol, struct Entry *entry, char* path, unsigned char *extbuf)
+do_extract_file(struct AdfVolume *vol, struct AdfEntry *entry, char* path, unsigned char *extbuf)
 {
   char *filename;
   char *name = entry->name;
   FILE *out;
   long n_bytes;
-  struct File *file;
+  struct AdfFile *file;
 
   /* allocate memory for the path, separator, filename and the trailing separator */
   filename = malloc (strlen (path) + 1 + strlen (name) + 1);
@@ -118,7 +118,7 @@ do_extract_file(struct Volume *vol, struct Entry *entry, char* path, unsigned ch
   }
 
   /* open the file in the image */
-  file = adfOpenFile (vol, name, "r");
+  file = adfFileOpen (vol, name, ADF_FILE_MODE_READ);
   if (!file) {
     error (0, "%s: Can't read file from image. Access bits: '%s'", filename, access2str (entry->access));
     fclose (out);
@@ -126,10 +126,10 @@ do_extract_file(struct Volume *vol, struct Entry *entry, char* path, unsigned ch
   }
 
   /* read the file from the image */
-  n_bytes = adfReadFile(file, BUFSIZE, extbuf);
-  while (!adfEndOfFile (file)) {
+  n_bytes = adfFileRead(file, BUFSIZE, extbuf);
+  while (!adfFileAtEOF (file)) {
     fwrite (extbuf, sizeof (unsigned char), n_bytes, out);
-    n_bytes = adfReadFile (file, BUFSIZE, extbuf);
+    n_bytes = adfFileRead (file, BUFSIZE, extbuf);
   }
 
   /* write any remaining bytes */
@@ -143,7 +143,7 @@ do_extract_file(struct Volume *vol, struct Entry *entry, char* path, unsigned ch
   update_timestamp (filename, entry);
 
   /* close both files */
-  adfCloseFile (file);
+  adfFileClose (file);
   fclose (out);
 
   free (filename);
@@ -151,14 +151,14 @@ do_extract_file(struct Volume *vol, struct Entry *entry, char* path, unsigned ch
 
 /* the Recursive Extracter(tm) */
 void
-do_extract_tree (struct Volume *vol, struct List* tree, char *path, unsigned char *extbuf)
+do_extract_tree (struct AdfVolume *vol, struct AdfList* tree, char *path, unsigned char *extbuf)
 {
-  struct Entry* entry;
+  struct AdfEntry* entry;
   char *dir;
 
   while(tree) {
     entry = tree->content;
-    if (entry->type == ST_DIR) {
+    if (entry->type == ADF_ST_DIR) {
       /* dir */
       dir = malloc (strlen (path) + 1 + strlen (entry->name) + 1);
       if (!dir) {
@@ -183,7 +183,7 @@ do_extract_tree (struct Volume *vol, struct List* tree, char *path, unsigned cha
       }
 
       if (tree->subdir != NULL) {
-	if (adfChangeDir (vol, entry->name) == RC_OK) {
+	if (adfChangeDir (vol, entry->name) == ADF_RC_OK) {
 	  if (dir) {
 	    do_extract_tree (vol, tree->subdir, dir, extbuf);
 	    free (dir);
@@ -194,7 +194,7 @@ do_extract_tree (struct Volume *vol, struct List* tree, char *path, unsigned cha
 	  fprintf (stderr, "ExtractTree: dir \"%s/%s\" not found.\n", path,entry->name);
 	}
       }
-    } else if (entry->type == ST_FILE) {
+    } else if (entry->type == ADF_ST_FILE) {
       /* file */
       do_extract_file (vol, entry, path, extbuf);
     }
@@ -205,9 +205,9 @@ do_extract_tree (struct Volume *vol, struct List* tree, char *path, unsigned cha
 
 /* entry function for the recursive extracter */
 void
-extract_tree (char *filename, char *path, struct Volume *volume)
+extract_tree (char *filename, char *path, struct AdfVolume *volume)
 {
-  struct List *cell, *list;
+  struct AdfList *cell, *list;
   unsigned char *buf;
 
   buf = malloc (BUFSIZE);
@@ -273,8 +273,8 @@ main (int argc, char *argv[])
   char *extract_dir = "";
   int c, i;
   int n_files;
-  struct Device *device;
-  struct Volume *volume;
+  struct AdfDevice *device;
+  struct AdfVolume *volume;
 
   init_adflib();
 
@@ -340,5 +340,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

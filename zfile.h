@@ -6,8 +6,13 @@
   * (c) 1996 Samuel Devulder
   */
 
+#ifndef ZFILE_H_
+#define ZFILE_H_
+
 extern struct zfile *zfile_open(const char *, const char *, unsigned short re_compress);
 extern FILE *f_zfile_open(const char *, const char *, unsigned short re_compress);
 extern char *n_zfile_open(const char *, const char *, unsigned short re_compress);
 extern int zfile_close(FILE *);
 extern void zfile_exit(void);
+
+#endif

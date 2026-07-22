@@ -6,10 +6,13 @@
  * Copyright (C)2002-2015 Rikard Bosnjakovic <bos@hack.org>
  */
 #include <adflib.h>
+#include <adf_vol.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include "error.h"
@@ -20,11 +23,13 @@
 int
 isdigits (char *str)
 {
-  register int i;
+  size_t i;
 
-  for (i = 0; i < strlen (str); i++)
-    if (!isdigit (str[i]))
-      return 0;
+  for (i = 0; i < strlen (str); i++) {
+      if (!isdigit (str[i])) {
+        return 0;
+      }
+  }
 
   return 1;
 }
@@ -135,9 +140,25 @@ get_adf_dostype (char dostype)
   return "ApanAP-FS";
 }
 
+//-------------------------------------------------------------------------
+
+static struct AdfDevice *adfMountDev( const char * const  name,  const AdfAccessMode mode )
+{
+  struct AdfDevice *dev;
+
+  dev = adfDevOpen(name, mode);
+  if (dev) {
+    int res = adfDevMount(dev);
+    if (res == ADF_RC_OK) {
+      return dev;
+    }
+
+  }
+  return NULL;
+}
+
 /* mounts an adf-image */
-int
-mount_adf (char *filename, struct Device **dev, struct Volume **vol, int rw)
+int mount_adf (char *filename, struct AdfDevice **dev, struct AdfVolume **vol, int rw)
 {
   char *errmsg = "Can't mount the device '%s' (perhaps not a DOS-disk or adf-file)";
 
@@ -147,20 +168,22 @@ mount_adf (char *filename, struct Device **dev, struct Volume **vol, int rw)
     return 0;
   }
 
-  if (rw == READ_WRITE)
+  if (rw == READ_WRITE) {
     *dev = adfMountDev (n_zfile_open(filename, "rw", 1), rw);
-  else
+  } else {
     *dev = adfMountDev (n_zfile_open(filename, "r", 0), rw);
+  }
 
   if (!*dev) {
     error (0, errmsg, filename);
     return 0;
   }
 
-  *vol = adfMount (*dev, 0, rw);
+  *vol = adfVolMount (*dev, 0, rw);
+
   if (!*vol) {
     error (0, errmsg, filename);
-    adfUnMountDev (*dev);
+    adfDevUnMount (*dev);
     return 0;
   }
 
@@ -169,12 +192,13 @@ mount_adf (char *filename, struct Device **dev, struct Volume **vol, int rw)
 
 /* prints a nice header for the adf-image. it *must* be mounted */
 void
-print_volume_header (char *filename, struct Volume *volume)
+print_volume_header (char *filename, struct AdfVolume *volume)
 {
-  register int i;
+  size_t i;
 
-  if (!volume)
+  if (!volume) {
     return;
+  }
 
   /* print header, consisting of filename and the (mounted) volume name */
   /* volName can be NULL for some hardfiles, no idea why.               */
@@ -202,15 +226,17 @@ null_function (void)
 void
 init_adflib (void)
 {
-  int true = 1;
+  int is_true = 1;
+
+  adfLibInit();
 
   adfEnvInitDefault();
   /* redirect errors and warnings to the big black void */
-  adfChgEnvProp (PR_EFCT, null_function);
-  adfChgEnvProp (PR_WFCT, null_function);
+  adfEnvSetProperty (ADF_PR_EFCT, (intptr_t)null_function);
+  adfEnvSetProperty (ADF_PR_WFCT, (intptr_t)null_function);
 
   /* yes, we want to use directory caching */
-  adfChgEnvProp (PR_USEDIRC, (void *)&true);
+  adfEnvSetProperty (ADF_PR_USEDIRC, (intptr_t)&is_true);
 }
 
 /* shut down the adflib */
@@ -228,21 +254,21 @@ access2str (long access)
   static char str[8+1];
 
   strcpy (str, "----RWED");
-  if (hasD (access)) str[7] = '-';
-  if (hasE (access)) str[6] = '-';
-  if (hasW (access)) str[5] = '-';
-  if (hasR (access)) str[4] = '-';
-  if (hasA (access)) str[3] = 'A';
-  if (hasP (access)) str[2] = 'P';
-  if (hasS (access)) str[1] = 'S';
-  if (hasH (access)) str[0] = 'H';
+  if (adfAccHasD (access)) str[7] = '-';
+  if (adfAccHasE (access)) str[6] = '-';
+  if (adfAccHasW (access)) str[5] = '-';
+  if (adfAccHasR (access)) str[4] = '-';
+  if (adfAccHasA (access)) str[3] = 'A';
+  if (adfAccHasP (access)) str[2] = 'P';
+  if (adfAccHasS (access)) str[1] = 'S';
+  if (adfAccHasH (access)) str[0] = 'H';
 
   return (str);
 }
 
 /* a temporary function until it's implemeted in adflib */
 void
-change_to_root_dir (struct Volume *volume)
+change_to_root_dir (struct AdfVolume *volume)
 {
   register int i;
 

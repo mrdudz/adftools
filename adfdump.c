@@ -22,7 +22,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFDUMP;
+const char *program_name = ADFDUMP;
 
 /* controls whether to dump to stdout or not */
 static int opt_dump_to_stdout;
@@ -184,18 +184,18 @@ main (int argc, char *argv[])
       }
 
       notify ("Dumping bootblock of '%s': ", filename);
-      if (opt_dump_to_stdout)
-        write (1, bootblock, 1024);
-      else {
-        /* grab the bootblock */
-        /* if dir was specified, the path will be in 'dir' */
-        ret = dump_bootblock_to_file (bootblock, dir, filename);
+      if (opt_dump_to_stdout) {
+          ret = write (1, bootblock, 1024);
+      } else {
+          /* grab the bootblock */
+          /* if dir was specified, the path will be in 'dir' */
+          ret = dump_bootblock_to_file (bootblock, dir, filename);
 
-        if (!ret) {
-          notify ("Error when dumping: %s", strerror (errno));
-          free (bootblock);
-          continue;
-        }
+          if (!ret) {
+            notify ("Error when dumping: %s", strerror (errno));
+            free (bootblock);
+            continue;
+          }
       }
 
       free (bootblock);
@@ -205,5 +205,5 @@ main (int argc, char *argv[])
   notify ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

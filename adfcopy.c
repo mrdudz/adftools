@@ -5,7 +5,6 @@
  *
  * Copyright (C)2002-2015 Rikard Bosnjakovic <bos@hack.org>
  */
-#include <adflib.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -19,12 +18,19 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <adflib.h>
+#define BUILDING_WITH_CMAKE
+#define HAVE_STRNLEN
+#define HAVE_STRNDUP
+#define HAVE_STPNCPY
+#include <adf_util.h>
+
 #include "error.h"
 #include "misc.h"
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFCOPY;
+const char *program_name = ADFCOPY;
 
 /* we need to determine the maximum size of a path, using PATH_MAX */
 #ifdef PATH_MAX
@@ -46,14 +52,14 @@ static char *fullpath;
 static char *adf_path;
 
 /* sector value for the current directory */
-static SECTNUM sector;
+static ADF_SECTNUM sector;
 
 /* should directories be created when copying files the non-recursively way? */
 static int opt_force;
 
 /* the structures for the adf-image */
-static struct Device *device;
-static struct Volume *volume;
+static struct AdfDevice *device;
+static struct AdfVolume *volume;
 
 /* options */
 static struct option long_options[] =
@@ -71,10 +77,10 @@ static struct option long_options[] =
 /********************************************************************/
 /* copies file time from the source file to the adf-file */
 void
-adf_copy_file_time (struct Volume *vol, char *filename) {
-  struct File *file;
+adf_copy_file_time (struct AdfVolume *vol, char *filename) {
+  struct AdfFile *file;
   /* SECTNUM nSect; */
-  struct bEntryBlock entry, parent;
+  struct AdfEntryBlock entry, parent;
   struct DateTime dt;
   struct stat st_buf;
   struct tm *local;
@@ -97,13 +103,13 @@ adf_copy_file_time (struct Volume *vol, char *filename) {
   /* nSect = adfNameToEntryBlk (vol, parent.hashTable, basename (filename), &entry, NULL); */
   adfNameToEntryBlk (vol, parent.hashTable, basename (filename), &entry, NULL);
 
-  file = (struct File*) malloc (sizeof (struct File));
+  file = (struct AdfFile*) malloc (sizeof (struct AdfFile));
   if (!file) {
     error (0, "Can't allocate memory for timestamp copy #1");
     return;
   }
 
-  file->fileHdr = (struct bFileHeaderBlock*) malloc (sizeof (struct bFileHeaderBlock));
+  file->fileHdr = (struct AdfFileHeaderBlock*) malloc (sizeof (struct AdfFileHeaderBlock));
   if (!file->fileHdr) {
     error (0, "Can't allocate memory for timestamp copy #2");
     return;
@@ -119,12 +125,12 @@ adf_copy_file_time (struct Volume *vol, char *filename) {
   file->pos = 0;
   file->posInExtBlk = 0;
   file->posInDataBlk = 0;
-  file->writeMode = 1;
+  file->modeWrite = 1;
   file->currentExt = NULL;
   file->nDataBlock = 0;
 
-  memcpy(file->fileHdr, &entry, sizeof(struct bFileHeaderBlock));
-  file->eof = TRUE;
+  memcpy(file->fileHdr, &entry, sizeof(struct AdfFileHeaderBlock));
+  //file->eof = TRUE; //???
 
   stat (filename, &st_buf);
   local = localtime (&st_buf.st_mtime);
@@ -154,19 +160,24 @@ int
 adf_validate_directory (char *dir)
 {
   /* backup the directory name */
-  char *directory = strdup (dir);
+  char *directory;
+  char *dircopy = strdup (dir);
+  directory = dircopy;
 
   /* a single '/' means to copy to the root directory */
   if ((strlen (directory) == 1) &&
-      (strcmp (directory, "/") == 0))
-    free (directory);
+      (strcmp (directory, "/") == 0)) {
+    free (dircopy);
     return 1;
+  }
 
   /* delete leading and trailing slashes (/) in the string (if any) */
-  while (directory[strlen (directory) - 1] == '/')
+  while (directory[strlen (directory) - 1] == '/') {
     directory[strlen (directory) - 1] = '\0';
-  while (directory[0] == '/')
+  }
+  while (directory[0] == '/') {
     directory++;
+  }
 
   /* looks like there were more directories, check them all */
   if (strchr (directory, '/')) {
@@ -175,8 +186,8 @@ adf_validate_directory (char *dir)
     /* loop through the directories */
     while (splitc (tmp, directory)) {
       /* check if the adf-dir exists */
-      if (adfChangeDir (volume, tmp) != RC_OK) {
-        free (directory);
+      if (adfChangeDir (volume, tmp) != ADF_RC_OK) {
+        free (dircopy);
         free (tmp);
         return 0;
       }
@@ -186,14 +197,14 @@ adf_validate_directory (char *dir)
   }
 
   /* last element is left in 'directory' */
-  if (adfChangeDir (volume, directory) != RC_OK)
-    free (directory);
+  if (adfChangeDir (volume, directory) != ADF_RC_OK) {
+    free (dircopy);
     return 0;
+  }
 
   /* all went fine. update the global sector variable */
   sector = volume->curDirPtr;
-
-  free (directory);
+  free (dircopy);
   return 1;
 }
 
@@ -229,7 +240,7 @@ adf_make_dir (const char *path)
     /* CASE 1: no subdirs specified (no "/" in dir name). create directory in root level */
     /*************************************************************************************/
     /* try to change to the dir first, to see if it already exists */
-    if (adfChangeDir (volume, directory) == RC_OK) {
+    if (adfChangeDir (volume, directory) == ADF_RC_OK) {
       notify ("Directory '%s' exists, skipping.\n", directory);
       sector = volume->curDirPtr;
 
@@ -238,9 +249,9 @@ adf_make_dir (const char *path)
     }
 
     /* no subdirs, create in the root directory */
-    if (adfCreateDir (volume, sector, directory) == RC_OK) {
+    if (adfCreateDir (volume, sector, directory) == ADF_RC_OK) {
       /* internally change to the dir we just created */
-      if (adfChangeDir (volume, directory) != RC_OK)
+      if (adfChangeDir (volume, directory) != ADF_RC_OK)
         error (0, "Created directory '%s', but couldn't set it as working directory. Weird", directory);
       else
         notify ("Created directory '%s'.\n", directory);
@@ -272,20 +283,20 @@ adf_make_dir (const char *path)
 int
 copy_file_to_adf (char *filename)
 {
-  struct File* file;
+  struct AdfFile* file;
   FILE* in;
   long n, len;
   unsigned char buf[BUFSIZE];
 
   in = fopen (filename, "rb");
   if (!in) {
-    /* adfCloseFile (file); */  // Is this needed?  /bos 2013-11-22
+    /* adfFileClose (file); */  // Is this needed?  /bos 2013-11-22
     /* add more error handling */
     error (0, "Can't open '%s' for reading: %s", filename, strerror (errno));
     return 0;
   };
 
-  file = adfOpenFile (volume, basename (filename), "w");
+  file = adfFileOpen (volume, basename (filename), ADF_FILE_MODE_WRITE);
   if (!file) {
     /* add more error handling */
     error (0, "Can't open '%s' for writing. No idea why, perhaps the file exists", filename);
@@ -295,16 +306,16 @@ copy_file_to_adf (char *filename)
   len = BUFSIZE;
   n = fread (buf, sizeof (unsigned char), len, in);
   while (!feof (in)) {
-    /* WARNING - adfWriteFile() DOES NOT REPORT ANY ERRORS IF THE DISK IS FULL! */
-    adfWriteFile (file, n, buf);
+    /* WARNING - adfFileWrite() DOES NOT REPORT ANY ERRORS IF THE DISK IS FULL! */
+    adfFileWrite (file, n, buf);
     n = fread (buf, sizeof (unsigned char), len, in);
   }
 
   if (n > 0)
-    adfWriteFile (file, n, buf);
+    adfFileWrite (file, n, buf);
 
   fclose (in);
-  adfCloseFile (file);
+  adfFileClose (file);
 
   // adfUpdateBitmap() breaks!
   adf_copy_file_time (volume, filename);
@@ -380,7 +391,7 @@ adf_ftw_callback (char *pathname, const struct stat *statptr, int type)
         case S_IFDIR:
           /* directory */
           notify ("This should *not* happen. Blame Canada, then do a bug-report.\n");
-
+          /* fall through */
         default:
           /* block special, links, sockets etc are ignored */
           notify ("Ignoring '%s', the file is not a regular file or directory.\n", pathname);
@@ -564,12 +575,14 @@ main (int argc, char *argv[])
   }
 
   /* mount the adf-file */
-  if (!mount_adf (adf_image, &device, &volume, READ_WRITE))
-    exit(1);
+  if (!mount_adf (adf_image, &device, &volume, READ_WRITE)) {
+    exit(EXIT_FAILURE);
+  }
 
   adf_path = allocate_path ();
-  if (!adf_path)
+  if (!adf_path) {
     error (1, "Can't allocate memory: %s", strerror (errno));
+  }
 
   strcpy (adf_path, basename (adf_image));
 
@@ -579,8 +592,9 @@ main (int argc, char *argv[])
 
     /* make sure the selected destination in the image exists */
     ret = adf_validate_directory (adf_destination);
-    if (!ret && !opt_force)
+    if (!ret && !opt_force) {
       error (1, "No such directory in the adf-file: '%s'", adf_destination);
+    }
 
     sector = volume->curDirPtr;
     while (optind < argc) {
@@ -601,5 +615,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

@@ -21,11 +21,11 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFMAKEDIR;
+const char *program_name = ADFMAKEDIR;
 
 /* we need to maintain a global sector value for the current */
 /* directory if we are going to create subdirectories in it  */
-static SECTNUM sector;
+static ADF_SECTNUM sector;
 
 /* options */
 static struct option long_options[] =
@@ -42,15 +42,17 @@ static struct option long_options[] =
 /********************************************************************/
 /* this function is recursive */
 void
-make_dir (struct Volume *volume, char *directory, SECTNUM sect)
+make_dir (struct AdfVolume *volume, char *directory, ADF_SECTNUM sect)
 {
+  sect = sect; /* get rid of warning */
+
   /* we need two versions */
   if (!strchr (directory, '/')) {
     /*************************************************************************************/
     /* CASE 1: no subdirs specified (no "/" in dir name). create directory in root level */
     /*************************************************************************************/
     /* try to change to the dir first, to see if it already exists */
-    if (adfChangeDir (volume, directory) == RC_OK) {
+    if (adfChangeDir (volume, directory) == ADF_RC_OK) {
       notify ("Directory '%s' exists, skipping.\n", directory);
       sector = volume->curDirPtr;
 
@@ -58,16 +60,18 @@ make_dir (struct Volume *volume, char *directory, SECTNUM sect)
     }
 
     /* no subdirs, create in the root directory */
-    if (adfCreateDir (volume, sector, directory) == RC_OK) {
+    if (adfCreateDir (volume, sector, directory) == ADF_RC_OK) {
       /* internally change to the dir we just created */
-      if (adfChangeDir (volume, directory) != RC_OK)
+      if (adfChangeDir (volume, directory) != ADF_RC_OK) {
         error (0, "Created directory '%s', but couldn't set it as working directory. Weird", directory);
-      else
+      } else {
         notify ("Created directory '%s'.\n", directory);
+      }
 
       sector = volume->curDirPtr;
-    } else
-      error (0, "Could not create directory '%s', no idea why");
+    } else {
+      error (0, "Could not create directory '%s', no idea why", directory);
+    }
   } else {
     /***********************************************************/
     /* CASE 2: subdirs specified. strip the / and go recursive */
@@ -75,8 +79,9 @@ make_dir (struct Volume *volume, char *directory, SECTNUM sect)
     char *tmp = strdup (directory);
 
     /* repeat as long as there is a / in the directory to be created */
-    while (splitc (tmp, directory))
+    while (splitc (tmp, directory)) {
       make_dir (volume, tmp, sector);
+    }
 
     /* last element is left in 'directory' */
     make_dir (volume, directory, sector);
@@ -103,7 +108,7 @@ print_usage (int status)
     print_footer ();
   }
 
-  exit (0);
+  exit (status);
 }
 
 /********************************************************************/
@@ -115,8 +120,8 @@ main (int argc, char *argv[])
   char *firstarg;
   int c;
   int n_files;
-  struct Device *device;
-  struct Volume *volume;
+  struct AdfDevice *device;
+  struct AdfVolume *volume;
 
   init_adflib();
 
@@ -127,15 +132,15 @@ main (int argc, char *argv[])
 	break;
 
       case 'h':
-	print_usage (1);
+	print_usage (EXIT_SUCCESS);
 	break;
 
       case 'V':
 	print_version ();
-	exit (0);
+	exit (EXIT_SUCCESS);
 
       default:
-	print_usage (0);
+	print_usage (EXIT_FAILURE);
     }
   }
 
@@ -145,17 +150,18 @@ main (int argc, char *argv[])
   n_files = argc - optind;
   if (n_files < 0) {
     error (0, "No adf-file specified");
-    print_usage (0);
+    print_usage (EXIT_FAILURE);
   } else if (n_files == 0) {
     error (0, "Too few arguments");
-    print_usage (0);
+    print_usage (EXIT_FAILURE);
   }
 
   /* all remaining arguments should be directories to create */
   if (optind < argc) {
     /* mount the adf-file */
-    if (!mount_adf (firstarg, &device, &volume, READ_WRITE))
-      exit(1);
+    if (!mount_adf (firstarg, &device, &volume, READ_WRITE)) {
+      exit(EXIT_FAILURE);
+    }
 
     /* step through the remaining arguments */
     while (optind < argc) {
@@ -170,5 +176,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

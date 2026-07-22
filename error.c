@@ -10,9 +10,7 @@
 #include <stdlib.h>
 
 #include "misc.h"
-
-/* set by all programs in the adftools-package */
-extern char *program_name;
+#include "version.h"
 
 /* notify the user something harmless (to stderr) */
 void
@@ -54,6 +52,7 @@ error (int action, char *fmt, ...)
   free (logbuffer);
 
   /* something *real* bad happened! */
-  if (action)
+  if (action) {
     exit (42);
+  }
 }

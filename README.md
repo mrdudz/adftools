@@ -1,9 +1,20 @@
-This is adftools.
+# adftools
 
 adftools is a package containing various command line utilities for
 ADF-files, which is a raw dump of an Amiga disk.
 
-The current version is v0.3 and contains the following tools:
+This source is based on the decades old repository posted at
+https://github.com/bos4711/adftools
+
+It was updated to compile with the latest version of the adflib, which is
+available at https://github.com/adflib/ADFlib
+
+goals:
+- add the missing adfrelabel and adfrename programs
+- make sure the zfile wrapper is used correctly at all places
+
+
+The current version is v0.4wip and contains the following tools:
 
 adfcopy    - copy files from host to the ADF
 adfcreate  - create an ADF
@@ -48,12 +59,14 @@ the bootblock. Here's what happens:
     Segmentation fault
 
 
-Compiling adftools
-==================
+# Compiling adftools
 
 adftools requires ADFLib which is made by Laurent Clévy. Without this
 lib you will not be able to compile adftools. Consult the
 documentation for ADFLib about how to install it.
+
+https://github.com/adflib/ADFlib
+
 
 When you have a working ADFLib installed, simply hit "make" in the
 adftool directory. There is no need for running configure or anything
@@ -61,9 +74,5 @@ fancy like that, and in case you are not interested in debug info you
 might want to change the CFLAGS in the Makefile, like removing --ggdb:
 
     CFLAGS= -Wall --ggdb
-
-
-
-
 
 adftools (C)2002-2015 Rikard Bosnjakovic <bos@hack.org>

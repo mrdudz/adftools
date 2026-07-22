@@ -9,9 +9,6 @@
 
 #include "version.h"
 
-/* set by all programs in the adftools-package */
-extern char *program_name;
-
 void
 print_header ()
 {

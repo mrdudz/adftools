@@ -21,7 +21,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFDELETE;
+const char *program_name = ADFDELETE;
 
 /* options */
 static struct option long_options[] =
@@ -38,31 +38,31 @@ static struct option long_options[] =
 /********************************************************************/
 /* the actual remover. the last argument is only used in case of an error */
 void
-do_delete_file (struct Volume *volume, SECTNUM parent, char *file, char *fullpath)
+do_delete_file (struct AdfVolume *volume, ADF_SECTNUM parent, char *file, char *fullpath)
 {
-  struct File *f;
+  struct AdfFile *f;
 
   /* check if the file exists, since adfRemoveEntry() only returns YES or NO */
-  f = adfOpenFile (volume, file, "r");
+  f = adfFileOpen (volume, file, ADF_FILE_MODE_READ);
   if (f == NULL)
     error (0, "No such file or directory '%s'", fullpath);
-  else if (adfRemoveEntry (volume, parent, file) != RC_OK) {
-    if (adfChangeDir (volume, file) == RC_OK)
+  else if (adfRemoveEntry (volume, parent, file) != ADF_RC_OK) {
+    if (adfChangeDir (volume, file) == ADF_RC_OK)
       error (0, "non-empty directory '%s'. Register to be able to delete recursively :)", fullpath);
     else
       error (0, "Could not delete '%s'. No idea why", fullpath);
 
-    adfCloseFile (f);
+    adfFileClose (f);
   } else
     notify ("Removed '%s'.\n", fullpath);
 }
 
 /* entry function */
 void
-delete_file (struct Volume *volume, char *file)
+delete_file (struct AdfVolume *volume, char *file)
 {
   char *fullpath = strdup(file);
-  SECTNUM parent;
+  ADF_SECTNUM parent;
 
   /* we need two versions */
   if (!strchr (file, '/')) {
@@ -76,7 +76,7 @@ delete_file (struct Volume *volume, char *file)
     char *tmp = strdup (file);
 
     while (splitc (tmp, file))
-      if (adfChangeDir (volume, tmp) != RC_OK) {
+      if (adfChangeDir (volume, tmp) != ADF_RC_OK) {
         notify ("Could not enter directory '%s', no idea why.", tmp);
         free (tmp);
 
@@ -122,8 +122,8 @@ main (int argc, char *argv[])
   char *firstarg;
   int c;
   int n_files;
-  struct Device *device;
-  struct Volume *volume;
+  struct AdfDevice *device;
+  struct AdfVolume *volume;
 
   init_adflib();
 
@@ -178,5 +178,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

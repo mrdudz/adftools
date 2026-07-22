@@ -21,7 +21,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFLIST;
+const char *program_name = ADFLIST;
 
 /* size of all files */
 static long total_size;
@@ -43,16 +43,16 @@ static struct option long_options[] =
 /********************************************************************/
 /* output information for/from an Entry-block */
 void
-print_entry (struct Entry* entry, char *path)
+print_entry (struct AdfEntry* entry, char *path)
 {
   /* skip links, ADFlib do not support them properly (yet) */
-  if ((entry->type == ST_LFILE) ||
-      (entry->type == ST_LDIR) ||
-      (entry->type == ST_LSOFT))
+  if ((entry->type == ADF_ST_LFILE) ||
+      (entry->type == ADF_ST_LDIR) ||
+      (entry->type == ADF_ST_LSOFT))
     return;
 
   /* directories do not have sizes */
-  if (entry->type == ST_DIR) {
+  if (entry->type == ADF_ST_DIR) {
     printf ("   (DIR)  ");
     num_dirs++;
   } else {
@@ -69,7 +69,7 @@ print_entry (struct Entry* entry, char *path)
     printf("%s", path);
 
   /* append a slash to directories */
-  if (entry->type == ST_DIR) {
+  if (entry->type == ADF_ST_DIR) {
     size_t len = strlen(entry->name);
     entry->name[len] = '/';
     entry->name[len + 1] = '\0';
@@ -86,10 +86,10 @@ print_entry (struct Entry* entry, char *path)
 
 /* print entire directory tree (recursive) */
 void
-print_dir (struct Volume *volume, struct List *tree, char *path)
+print_dir (struct AdfVolume *volume, struct AdfList *tree, char *path)
 {
   char *buf;
-  struct Entry* entry;
+  struct AdfEntry* entry;
 
   while (tree) {
     print_entry (tree->content, path);
@@ -114,13 +114,13 @@ print_dir (struct Volume *volume, struct List *tree, char *path)
 
 /* entry function */
 void
-list_root_tree (char *filename, struct Volume *volume)
+list_root_tree (char *filename, struct AdfVolume *volume)
 {
   char *path = "";
   float proc = 0.0;
   register short int i;
 //  long disk_size;
-  struct List *cell, *list;
+  struct AdfList *cell, *list;
 
   /* print the name of the volume */
   print_volume_header (filename, volume);
@@ -174,8 +174,8 @@ main (int argc, char *argv[])
 {
   int c;
   int n_files;
-  struct Device *device;
-  struct Volume *volume;
+  struct AdfDevice *device;
+  struct AdfVolume *volume;
 
   init_adflib();
 
@@ -222,5 +222,5 @@ main (int argc, char *argv[])
   printf ("All Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

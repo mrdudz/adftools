@@ -1,0 +1,10 @@
+*.o
+adfcopy
+adfcreate
+adfdelete
+adfdump
+adfextract
+adfinfo
+adfinstall
+adflist
+adfmakedir

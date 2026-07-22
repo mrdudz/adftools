@@ -18,7 +18,7 @@
 #include "version.h"
 
 /* the name of this program */
-char *program_name = ADFCREATE;
+const char *program_name = ADFCREATE;
 
 /* controls whether to use high density or not */
 static int opt_high_density;
@@ -44,6 +44,23 @@ static struct option long_options[] =
 /********************************************************************/
 /*                        disk file-functions                       */
 /********************************************************************/
+
+static struct AdfDevice* adfCreateDumpDevice(char* filename, int32_t cyl, int32_t heads, int32_t sec)
+{
+    struct AdfDevice *dev = NULL;
+
+    dev = adfDevCreate("dump", filename, cyl, heads, sec );
+
+    if (dev) {
+      int res = adfDevMount(dev);
+      if (res == ADF_RC_OK) {
+        return dev;
+      }
+    }
+
+    return dev;
+}
+
 /* create a disk file with the correct size and put a filesystem on it */
 int
 create_disk_image (char *filename, char *disklabel, int filesystem)
@@ -51,7 +68,7 @@ create_disk_image (char *filename, char *disklabel, int filesystem)
   int n_tracks  = TRACKS;					/* 80 */
   int n_heads   = HEADS;					/* 2 */
   int n_sectors = SECTORS;					/* 11 for DD, 22 for HD */
-  struct Device* device;
+  struct AdfDevice* device;
 
   if (opt_high_density)
     n_sectors *= 2;
@@ -62,7 +79,7 @@ create_disk_image (char *filename, char *disklabel, int filesystem)
     return 0;
   }
 
-  if (adfCreateFlop (device, disklabel, filesystem) != RC_OK) {
+  if (adfCreateFlop (device, disklabel, filesystem) != ADF_RC_OK) {
     error (0, "Can't format '%s': %s", filename, strerror (errno));
     free (device);
     return 0;
@@ -163,7 +180,7 @@ main (int argc, char *argv[])
 
     while (optind < argc) {
       /* label and filename for the image */
-      char label[MAXNAMELEN+1];
+      char label[ADF_MAX_NAME_LEN + 1];
       char *name = argv[optind++];
 
       if (!strncmp (label_buf, "", sizeof (label)))
@@ -182,5 +199,5 @@ main (int argc, char *argv[])
   notify ("Done.\n");
 
   cleanup_adflib();
-  return 1;
+  return EXIT_SUCCESS;
 }

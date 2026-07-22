@@ -7,3 +7,5 @@
 2013-11-22, v0.3:  Added support for reading and writing compressed adf-files.
 
 2015-02-17, v0.3:  Added to github
+
+2026-21-07, v0.4:  fixed for adflib v0.10.7
