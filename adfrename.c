@@ -1,9 +1,10 @@
-/* adfdelete.c - Delete file(s) from an adf-image
+/* adfrename.c - Rename file(s) on an adf-image
  *
  * adftools - A complete package for maintaining image-files for the best
  * Amiga-emulator out there: UAE - http://www.freiburg.linux.de/~uae/
  *
  * Copyright (C)2002-2015 Rikard Bosnjakovic <bos@hack.org>
+ *           (C)2026-     groepaz <groepaz@gmx.net>
  */
 #include <adflib.h>
 #include <errno.h>
@@ -21,7 +22,7 @@
 #include "version.h"
 
 /* the name of this program */
-const char *program_name = ADFDELETE;
+const char *program_name = ADFRENAME;
 
 /* options */
 static struct option long_options[] =
@@ -36,30 +37,39 @@ static struct option long_options[] =
 /********************************************************************/
 /*                        disk file-functions                       */
 /********************************************************************/
-/* the actual remover. the last argument is only used in case of an error */
-void
-do_delete_file (struct AdfVolume *volume, ADF_SECTNUM parent, char *file, char *fullpath)
+
+static int is_file_or_dir(struct AdfVolume *volume, char *file)
 {
   struct AdfFile *f;
-
-  /* check if the file exists, since adfRemoveEntry() only returns YES or NO */
   f = adfFileOpen (volume, file, ADF_FILE_MODE_READ);
   if (f == NULL) {
-    error (0, "No such file or directory '%s'", fullpath);
-  } else if (adfRemoveEntry (volume, parent, file) != ADF_RC_OK) {
-    if (adfChangeDir (volume, file) == ADF_RC_OK)
-      error (0, "non-empty directory '%s'. Register to be able to delete recursively :)", fullpath);
-    else
-      error (0, "Could not delete '%s'. No idea why", fullpath);
+      if (adfChangeDir (volume, file) == ADF_RC_OK) {
+          adfToRootDir(volume);
+          return 1;
+      }
+      return 0;
+  }
+  adfFileClose (f);
+  return 1;
+}
 
-    adfFileClose (f);
-  } else
-    notify ("Removed '%s'.\n", fullpath);
+/* the actual remover. the last argument is only used in case of an error */
+void
+do_rename_file (struct AdfVolume *volume, ADF_SECTNUM parent, char *file, char *fullpath, char *newname)
+{
+  /* check if the file exists, since adfRemoveEntry() only returns YES or NO */
+  if (!is_file_or_dir(volume, file)) {
+    error (0, "No such file or directory '%s'", fullpath);
+  } else if (adfRenameEntry (volume, parent, file, parent, newname) != ADF_RC_OK) {
+    error (0, "Could not rename '%s'. No idea why", fullpath);
+  } else {
+    notify ("Renamed '%s' -> '%s'.\n", fullpath, newname);
+  }
 }
 
 /* entry function */
 void
-delete_file (struct AdfVolume *volume, char *file)
+rename_file (struct AdfVolume *volume, char *file, char *newname)
 {
   char *fullpath = strdup(file);
   ADF_SECTNUM parent;
@@ -71,7 +81,7 @@ delete_file (struct AdfVolume *volume, char *file)
     /******************************************************/
     parent = volume->curDirPtr;
 
-    do_delete_file (volume, parent, file, fullpath);
+    do_rename_file (volume, parent, file, fullpath, newname);
   } else {
     char *tmp = strdup (file);
 
@@ -85,7 +95,7 @@ delete_file (struct AdfVolume *volume, char *file)
 
     parent = volume->curDirPtr;
 
-    do_delete_file (volume, parent, file, fullpath);
+    do_rename_file (volume, parent, file, fullpath, newname);
 
     free (tmp);
   }
@@ -102,8 +112,8 @@ print_usage (int status)
   if (!status) {
     notify ("Try '%s --help' for more information.\n", program_name);
   } else {
-    printf ("Usage: %s ADF-IMAGE FILE...\n", program_name);
-    printf ("Delete FILE from ADF-IMAGE. Full path to FILE is required.\n\n");
+    printf ("Usage: %s ADF-IMAGE FILENAME NEWNAME\n", program_name);
+    printf ("Rename FILE to NEWNAME. Full path to FILE is required.\n\n");
     printf ("\t-h, --help           \tdisplay this help and exit\n");
     printf ("\t-V, --version        \tdisplay version information and exit\n");
     printf ("\n");
@@ -161,17 +171,19 @@ main (int argc, char *argv[])
   /* all remaining arguments should be directories to create */
   if (optind < argc) {
     /* mount the adf-file */
-    if (!mount_adf (firstarg, &device, &volume, READ_WRITE))
-      exit(1);
+    if (!mount_adf (firstarg, &device, &volume, READ_WRITE)) {
+      exit(EXIT_FAILURE);
+    }
 
     /* step through the remaining arguments */
     notify ("\nProcessing %s:\n", firstarg);
 
     while (optind < argc) {
-      char *file_to_delete = argv[optind++];
+      char *file_to_rename = argv[optind++];
+      char *new_name = argv[optind++];
 
       change_to_root_dir (volume);
-      delete_file (volume, file_to_delete);
+      rename_file (volume, file_to_rename, new_name);
     }
   }
 

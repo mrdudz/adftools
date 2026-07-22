@@ -10,9 +10,10 @@ https://github.com/bos4711/adftools
 available at https://github.com/adflib/ADFlib
 - all tools return "standard" values on success/error, so they work eg in
   Makefiles
+- added "adfrename"
 
 goals:
-- add the missing adfrelabel and adfrename programs
+- add the missing adfrelabel program
 - make sure the zfile wrapper is used correctly at all places
 
 
@@ -27,6 +28,7 @@ The current version is v0.4wip and contains the following tools:
     adfinstall - install a bootblock to an ADF
     adflist    - list all contents of an ADF
     adfmakedir - create a directory within an ADF
+    adfrename  - rename files / dirs within an ADF
 
 Some of the tools utilizes zlib and will therefore work with
 compressed ADF-files (.adf.gz, .adz, ...). The tools that does not

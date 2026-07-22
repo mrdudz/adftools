@@ -10,7 +10,7 @@
 #include "version.h"
 
 void
-print_header ()
+print_header (void)
 {
   printf ("%s (%s) %s\n", program_name, PACKAGE_NAME, PACKAGE_VERSION);
   printf ("Copyright (C) %s Rikard Bosnjakovic.\n\n", PACKAGE_DATE);
@@ -20,13 +20,13 @@ print_header ()
 }
 
 void
-print_footer ()
+print_footer (void)
 {
   printf ("Report bugs to <bos@hack.org>.\n");
 }
 
 void
-print_version ()
+print_version (void)
 {
   print_header ();
   print_footer ();
