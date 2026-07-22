@@ -15,7 +15,7 @@ extern const char *program_name;
 #define ADFDUMP 	"adfdump"
 #define ADFFORMAT 	"adfformat"
 #define ADFEXTRACT 	"adfextract"
-#define ADFINFO		"adfinfo"
+#define ADFSHOW		"adfshow"
 #define ADFINSTALL	"adfinstall"
 #define ADFLIST		"adflist"
 #define ADFMAKEDIR	"adfmakedir"

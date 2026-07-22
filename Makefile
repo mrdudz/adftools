@@ -17,7 +17,7 @@ LIBS=-ladf
 
 SOURCES=error.c misc.c version.c zfile.c
 OBJS=$(SOURCES:.c=.o)
-PROGS= adfcopy adfcreate adfdelete adfdump adfextract adfinfo adfinstall adflist adfmakedir adfrename
+PROGS= adfcopy adfcreate adfdelete adfdump adfextract adfshow adfinstall adflist adfmakedir adfrename
 
 CC= gcc
 CFLAGS+=-O2 -W -Wall -Wextra
@@ -49,7 +49,7 @@ adfextract: $(OBJS) adfextract.c
 	echo $@
 	$(CC) $(CFLAGS) -o $@ $@.c $(OBJS) $(LIBOBJS) $(LIBS)
 
-adfinfo: $(OBJS) adfinfo.c
+adfshow: $(OBJS) adfshow.c
 	echo $@
 	$(CC) $(CFLAGS) -o $@ $@.c $(OBJS) $(LIBOBJS) $(LIBS)
 

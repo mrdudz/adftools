@@ -338,11 +338,12 @@ check_destination_dir (const char *directory)
     return 0;
   }
 
-  if (!S_ISDIR (statbuf.st_mode))
+  if (!S_ISDIR (statbuf.st_mode)) {
     /* not a dir */
     return 0;
-  else
+  } else {
     return 1;
+  }
 }
 
 /* allocate a buffer big enough to contain the biggest pathname possible */

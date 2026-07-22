@@ -6,11 +6,15 @@ ADF-files, which is a raw dump of an Amiga disk.
 This source is based on the decades old repository posted at
 https://github.com/bos4711/adftools
 
+changes over the 2015 source release:
+
 - It was updated to compile with the latest version of the adflib, which is
 available at https://github.com/adflib/ADFlib
 - all tools return "standard" values on success/error, so they work eg in
   Makefiles
 - added "adfrename"
+- renamed "adfinfo" to "adfshow" to avoid name collision with files
+  installed by current "libadf"/"unadf" packages
 
 goals:
 - add the missing adfrelabel program
@@ -24,7 +28,7 @@ The current version is v0.4wip and contains the following tools:
     adfdelete  - delete files / dirs within an ADF
     adfdump    - dump the bootblock from an ADF
     adfextract - extract complete file structure from an ADF
-    adfinfo    - show info about an ADF
+    adfshow    - show info about an ADF
     adfinstall - install a bootblock to an ADF
     adflist    - list all contents of an ADF
     adfmakedir - create a directory within an ADF
@@ -39,7 +43,7 @@ which will try to install a bootblock on a compressed ADF-file.
 The workaround for this tool is to unpack the ADF before installing
 the bootblock. Here's what happens:
 
-    bos:~/git/adftools$ adfinfo apa.adf.gz
+    bos:~/git/adftools$ adfshow apa.adf.gz
     apa.adf.gz
     ==========
     Label       : v
@@ -57,11 +61,10 @@ the bootblock. Here's what happens:
     Installing an OS1.3-bootblock to 'apa.adf.gz': Done.
     All Done.
     Segmentation fault
-    bos:~/git/adftools$ adfinfo apa.adf.gz
+    bos:~/git/adftools$ adfshow apa.adf.gz
 
     gzip: apa.adf.gz: invalid compressed data--format violated
     Segmentation fault
-
 
 # Compiling adftools
 
@@ -78,5 +81,31 @@ fancy like that, and in case you are not interested in debug info you
 might want to change the CFLAGS in the Makefile, like removing --ggdb:
 
     CFLAGS= -Wall --ggdb
+
+
+# adflibs own tools
+
+It should be noted that by now adflib comes with its own set of little
+command line utilities in the "example" directory:
+
+    adfbitmap           show block allocation table
+    adfformat           format (create file system) an adf
+    adfimagecreate      create empty (non formatted) images
+    adfinfo             show info about an adf
+    adfls               list content of an adf
+    adfsalvage          salvage files from adf
+    unadf               extract complete filestructure of an adf
+
+the tools may be named differently, eg gentoo ("unadf") uses:
+    
+    adf_bitmap
+    adf_format
+    adf_floppy_create
+    adf_show_metadata
+    adf_salvage
+    unadf
+    
+
+# Credits
 
 adftools (C)2002-2015 Rikard Bosnjakovic <bos@hack.org>

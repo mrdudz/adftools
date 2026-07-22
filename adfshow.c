@@ -1,4 +1,4 @@
-/* adfinfo.c - Display information about an adf-image
+/* adfshow.c - Display information about an adf-image
  *
  * adftools - A complete package for maintaining image-files for the best
  * Amiga-emulator out there: UAE - http://www.freiburg.linux.de/~uae/
@@ -22,7 +22,7 @@
 #include "zfile.h"
 
 /* the name of this program */
-const char *program_name = ADFINFO;
+const char *program_name = ADFSHOW;
 
 /* options */
 static struct option long_options[] =

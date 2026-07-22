@@ -4,7 +4,8 @@ adfcreate
 adfdelete
 adfdump
 adfextract
-adfinfo
+adfshow
 adfinstall
 adflist
 adfmakedir
+adfrename
